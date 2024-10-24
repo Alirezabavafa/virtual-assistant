@@ -1,13 +1,10 @@
-from flask import Flask, request, jsonify, send_from_directory
-import openai
+from flask import Flask, request, jsonify
+from openai import OpenAI
 from flask_cors import CORS
 import os
 import dotenv
 import re
 
-# Load environment variables from the .env file
-dotenv.load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # System content for the chatbot
 system_content = """You are a helpful assistant tasked with answering any questions about Alireza's CV and personal website. Give short and conversational answers that try to engage the user to ask more questions. You should provide short, concise, informative answers based on the information below:
@@ -27,34 +24,37 @@ def sanitize_message(message):
     message = re.sub(r'[^\w\s]', ' ', message)  # Basic sanitization (removes non-word characters)
     return message[-1000:]  # Limit input to 1000 characters for safety
 
+dotenv.load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI()
 app = Flask(__name__)
-CORS(app, resources={r"/chat": {"origins": "*"}})
-
-# Route to serve the chatbot.html file
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
+CORS(app)
 
 
+# Simple route to handle chat messages
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
     user_message = data.get("message", "")
     user_message = sanitize_message(user_message)
+    # we only care about the last 1000 characters
+    print("User message:", user_message)
     
-    try:
-        response = openai.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": user_message}
-            ]
-        )
-        response_message = response['choices'][0]['message']['content'].strip()
-        return jsonify({"response": response_message})
-    except Exception as e:
-        print("Error:", str(e))
-        return jsonify({"error": str(e)}), 500
+    # GPT response
+    response_message = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_content},
+            {
+                "role": "user",
+                "content": user_message
+            }
+        ]
+    ).choices[0].message.content
+    
+    return jsonify({"response": response_message})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000, debug=True)
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
