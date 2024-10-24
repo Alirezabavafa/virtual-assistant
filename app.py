@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify, send_from_directory
-import openai
+from openai import OpenAI
+# import openai
 from flask_cors import CORS
 import os
 import dotenv
 import re
 
 # Load environment variables from the .env file if using locally
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # System content for the chatbot
 system_content = """You are a helpful assistant tasked with answering any questions about Alireza's CV and personal website. Give short and conversational answers that try to engage the user to ask more questions. You should provide short, concise, informative answers based on the information below:
@@ -42,17 +43,22 @@ def chat():
     user_message = sanitize_message(user_message)
     # we only care about the last 1000 characters
     print("User message:", user_message)
+
+    client = OpenAI(
+    # This is the default and can be omitted
+    api_key=os.environ.get("OPENAI_API_KEY"),
+    )
     
     # GPT response using the new SDK format
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_message}
             ]
         )
-        response_message = response.choices[0].message['content'].strip()
+        response_message = response.choices[0].message.content.strip()
     except Exception as e:
         print(f"Error: {e}")
         response_message = "Sorry, something went wrong. Please try again later."
