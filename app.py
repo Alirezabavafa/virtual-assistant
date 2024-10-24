@@ -43,14 +43,14 @@ def chat():
     user_message = sanitize_message(user_message)
     
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_message}
             ]
         )
-        response_message = response.choices[0].message.content.strip()
+        response_message = response['choices'][0]['message']['content'].strip()
         return jsonify({"response": response_message})
     except Exception as e:
         print("Error:", str(e))
