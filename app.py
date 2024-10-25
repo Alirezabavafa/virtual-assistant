@@ -52,7 +52,7 @@ def chat():
     # GPT response using the new SDK format
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_message}
